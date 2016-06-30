@@ -1,6 +1,6 @@
 #!/usr/bin/python3
-#RareWareTimer.py
-version = 0.1
+#Countdown-timer.pyw
+version = 0.3
 
 #############################################################
 # This monstrosity was created by crash_horror (373vFS_Crash)
@@ -8,6 +8,10 @@ version = 0.1
 # read the license at the bottom.
 # (https://github.com/crash-horror)
 #############################################################
+
+# displaytruetime = str(time.strftime("%H:%M", time.localtime(time.time() + durr)))
+
+# elitetime = time.strftime("%H:%M", time.localtime())
 
 import sys
 import time
@@ -40,7 +44,7 @@ sky = (0, 76, 255)
 pygame.init()
 
 fpsTime = pygame.time.Clock()
-fps = 30
+fps = 60
 bg = black
 dispWidth = 500
 dispHeight = 300
@@ -86,44 +90,39 @@ def runMainLoop():
                         now = time.time()
                         future = now + durr
 
-        # ten minute button press
-                if tenminRECT.collidepoint(pos):
-                    if state[0] == "START":
-                        click2.play()
-                        durr = 600
-                    elif state[0] == "RESET":
-                        click2.play()
-                        durr = 600
-                        state = switch_start_button_state(state)
-
         # alarm button press
                 if alarmRECT.collidepoint(pos):
                     click3.play()
                     alarmstate = switch_alarm_state(alarmstate)
 
         # mousewheel UP
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 4:
-                pos = pygame.mouse.get_pos()
-                if minuteRECT.collidepoint(pos):
-                    durr += 60
-                if secondRECT.collidepoint(pos):
-                    durr += 1
+            if state[0] != "RUNNING":
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 4:
+                    pos = pygame.mouse.get_pos()
+                    if minuteRECT.collidepoint(pos):
+                        durr += 60
+                    if secondRECT.collidepoint(pos):
+                        durr += 1
 
         # mousewheel DOWN
-            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
-                pos = pygame.mouse.get_pos()
-                if minuteRECT.collidepoint(pos):
-                    durr -= 60
-                if secondRECT.collidepoint(pos):
-                    durr -= 1
+            if state[0] != "RUNNING":
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 5:
+                    pos = pygame.mouse.get_pos()
+                    if minuteRECT.collidepoint(pos):
+                        durr -= 60
+                    if secondRECT.collidepoint(pos):
+                        durr -= 1
 
-    # cap duration to under one hour
-        if durr > 3600:
-            durr = 3600
+    # cap duration to positive
+        if durr < 0:
+            durr = 0
 
     # calculate state
         if state[0] == "START":
             displaytime = str(time.strftime("%M:%S", time.gmtime(durr)))
+            displayhour = str(time.strftime("%H", time.gmtime(durr)))
+            # displaytruetime = str(time.strftime("%H:%M", time.localtime(time.time() + durr)))
+            displaytruetime = str(time.strftime("%H:%M", time.gmtime(time.time() + durr)))
             howfull = 100
         elif state[0] == "RUNNING":
             dt = future - time.time()
@@ -131,25 +130,30 @@ def runMainLoop():
             howfull = int(100 * dt  / durr)
             if dt < 00.1:
                 if alarmstate[0] == "OFF":
-                    alarm.play()
+                    alarm.play(loops = 3)
                 else:
                     alarm.play(loops = -1)
                 state = ["RESET", red]
             displaytime = str(time.strftime("%M:%S", time.gmtime(dt)))
+            displayhour = str(time.strftime("%H", time.gmtime(dt)))
+            displaytruetime = str(time.strftime("%H:%M", time.localtime(future)))
         elif state[0] == "RESET":
             displaytime = str(time.strftime("%M:%S", time.gmtime(dt)))
+            displayhour = str(time.strftime("%H", time.gmtime(dt)))
+            displaytruetime = str(time.strftime("%H:%M", time.localtime(future)))
 
     # start drawing stuff
         setDisplay.fill(bg)
 
     # elite clock
+        # elitetime = time.strftime("%H:%M", time.localtime())
         elitetime = time.strftime("%H:%M", time.gmtime())
         elitetimeTXT = largeboldfont.render(elitetime, True, darkgray)
         setDisplay.blit(elitetimeTXT, (375, 235))
 
     # draw dummy rects for mousewheel editing
-        minuteRECT = pygame.draw.rect(setDisplay, black, ((0, 0), (245, 150)))
-        secondRECT = pygame.draw.rect(setDisplay, black, ((255, 0), (245, 150)))
+        minuteRECT = pygame.draw.rect(setDisplay, black, ((100, 0), (170, 150)))
+        secondRECT = pygame.draw.rect(setDisplay, black, ((305, 0), (245, 150)))
 
     # draw start button
         startbuttonRECT = pygame.draw.rect(setDisplay, darkgray, ((140, 170), (220, 60)))
@@ -163,11 +167,16 @@ def runMainLoop():
 
     # draw timer
         clockfaceTXT = hugefont.render(displaytime, True, gray)
-        setDisplay.blit(clockfaceTXT, (50, -10))
+        setDisplay.blit(clockfaceTXT, (100, -10))
+
+    # draw hours
+        hourTXT = largeboldfont.render(displayhour + ":", True, gray)
+        setDisplay.blit(hourTXT, (30, 95))
 
     # draw 10min reset
-        tenminRECT = pygame.draw.rect(setDisplay, darkgray, ((140, 245), (220, 40)))
-        setDisplay.blit(tenminTXT, (250 - tenminTXT.get_width() // 2, 250))
+        truetimeRECT = pygame.draw.rect(setDisplay, darkgray, ((140, 245), (220, 40)))
+        truetimeTXT = infofont.render(displaytruetime, True, gray)
+        setDisplay.blit(truetimeTXT, (250 - truetimeTXT.get_width() // 2, 250))
 
     # draw graphic
         graphbackRECT = pygame.draw.rect(setDisplay, darkgray, ((15, 170), (110, 115)))
@@ -183,7 +192,7 @@ def runMainLoop():
 
 
 # setup
-pygame.display.set_caption('RareWare Timer v' + str(version))
+pygame.display.set_caption('Countdown Timer v' + str(version))
 setDisplay = pygame.display.set_mode((dispWidth, dispHeight))
 
 # audio
@@ -200,7 +209,7 @@ infofont = pygame.font.SysFont("tahoma", 25)
 
 
 # text
-tenminTXT = infofont.render("10:00", True, gray)
+# tenminTXT = infofont.render("10:00", True, gray)
 alarm1TXT = infofont.render("ALARM", True, black)
 alarm2TXT = infofont.render("REPEAT", True, black)
 
@@ -215,7 +224,7 @@ runMainLoop()
 # notes
 # -------------------------------------------------------
 """
-cxfreeze --base-name=Win32GUI RareWareTimer.py
+cxfreeze --base-name=Win32GUI Countdown-timer.pyw
 """
 
 
