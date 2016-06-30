@@ -195,6 +195,9 @@ def runMainLoop():
 pygame.display.set_caption('Countdown Timer v' + str(version))
 setDisplay = pygame.display.set_mode((dispWidth, dispHeight))
 
+icon = pygame.image.load('icon.png')
+pygame.display.set_icon(icon)
+
 # audio
 alarm = pygame.mixer.Sound("alarm.wav")
 click1 = pygame.mixer.Sound("click1.wav")
