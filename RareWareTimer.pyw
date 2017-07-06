@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #Countdown-timer.pyw
-version = 0.3
+version = 0.4
 
 #############################################################
 # This monstrosity was created by crash_horror (373vFS_Crash)
@@ -66,11 +66,16 @@ def switch_alarm_state(_astate):
         return ["ON", maroon]
 
 
+def switch_gmt_state(_astate):
+    return not _astate
+
+
 def runMainLoop():
     durr = 600
     state = ["START", green]
     alarmstate = ["OFF", darkgray]
     howfull = 105
+    isitlocaltime = True
 
     while True:
         for event in pygame.event.get():
@@ -79,7 +84,7 @@ def runMainLoop():
                 pygame.quit()
                 sys.exit()
 
-        # start button press
+        # start button and gmt button press
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 alarm.stop()
                 pos = pygame.mouse.get_pos()
@@ -89,6 +94,9 @@ def runMainLoop():
                     if state[0] == "RUNNING":
                         now = time.time()
                         future = now + durr
+                if clockRECT.collidepoint(pos):
+                    click1.play()
+                    isitlocaltime = switch_gmt_state(isitlocaltime)
 
         # alarm button press
                 if alarmRECT.collidepoint(pos):
@@ -119,10 +127,12 @@ def runMainLoop():
 
     # calculate state
         if state[0] == "START":
+            if isitlocaltime:
+                displaytruetime = str(time.strftime("%H:%M", time.localtime(time.time() + durr)))
+            else:
+                displaytruetime = str(time.strftime("%H:%M", time.gmtime(time.time() + durr)))
             displaytime = str(time.strftime("%M:%S", time.gmtime(durr)))
             displayhour = str(time.strftime("%H", time.gmtime(durr)))
-            # displaytruetime = str(time.strftime("%H:%M", time.localtime(time.time() + durr)))
-            displaytruetime = str(time.strftime("%H:%M", time.gmtime(time.time() + durr)))
             howfull = 100
         elif state[0] == "RUNNING":
             dt = future - time.time()
@@ -134,26 +144,37 @@ def runMainLoop():
                 else:
                     alarm.play(loops = -1)
                 state = ["RESET", red]
+            if isitlocaltime:
+                displaytruetime = str(time.strftime("%H:%M", time.localtime(future)))
+            else:
+                displaytruetime = str(time.strftime("%H:%M", time.gmtime(future)))
             displaytime = str(time.strftime("%M:%S", time.gmtime(dt)))
             displayhour = str(time.strftime("%H", time.gmtime(dt)))
-            displaytruetime = str(time.strftime("%H:%M", time.localtime(future)))
         elif state[0] == "RESET":
+            if isitlocaltime:
+                displaytruetime = str(time.strftime("%H:%M", time.localtime(future)))
+            else:
+                displaytruetime = str(time.strftime("%H:%M", time.gmtime(future)))
             displaytime = str(time.strftime("%M:%S", time.gmtime(dt)))
             displayhour = str(time.strftime("%H", time.gmtime(dt)))
-            displaytruetime = str(time.strftime("%H:%M", time.localtime(future)))
 
     # start drawing stuff
         setDisplay.fill(bg)
 
-    # elite clock
-        # elitetime = time.strftime("%H:%M", time.localtime())
-        elitetime = time.strftime("%H:%M", time.gmtime())
-        elitetimeTXT = largeboldfont.render(elitetime, True, darkgray)
-        setDisplay.blit(elitetimeTXT, (375, 235))
-
     # draw dummy rects for mousewheel editing
         minuteRECT = pygame.draw.rect(setDisplay, black, ((100, 0), (170, 150)))
         secondRECT = pygame.draw.rect(setDisplay, black, ((305, 0), (245, 150)))
+
+    # draw dummy rect for elite clock switching
+        clockRECT = pygame.draw.rect(setDisplay, black, ((140, 230), (500, 300)))
+
+    # elite clock
+        if isitlocaltime:
+            elitetime = time.strftime("%H:%M", time.localtime())
+        else:
+            elitetime = time.strftime("%H:%M", time.gmtime())
+        elitetimeTXT = largeboldfont.render(elitetime, True, darkgray)
+        setDisplay.blit(elitetimeTXT, (375, 235))
 
     # draw start button
         startbuttonRECT = pygame.draw.rect(setDisplay, darkgray, ((140, 170), (220, 60)))
@@ -186,6 +207,10 @@ def runMainLoop():
         percentTXT = infofont.render(percentstring, True, black)
         setDisplay.blit(percentTXT, (70 - percentTXT.get_width() // 2, 210))
 
+    # draw gmt indicator
+        if not isitlocaltime:
+            setDisplay.blit(gmtTXT, (15, 15))
+
     # update display
         pygame.display.flip()
         fpsTime.tick(fps)
@@ -194,6 +219,7 @@ def runMainLoop():
 # setup
 pygame.display.set_caption('Countdown Timer v' + str(version))
 setDisplay = pygame.display.set_mode((dispWidth, dispHeight))
+# setDisplay = pygame.display.set_mode((dispWidth, dispHeight), pygame.NOFRAME)
 
 icon = pygame.image.load('icon.png')
 pygame.display.set_icon(icon)
@@ -215,6 +241,7 @@ infofont = pygame.font.SysFont("tahoma", 25)
 # tenminTXT = infofont.render("10:00", True, gray)
 alarm1TXT = infofont.render("ALARM", True, black)
 alarm2TXT = infofont.render("REPEAT", True, black)
+gmtTXT = infofont.render("GMT", True, (50, 50, 50))
 
 
 # run the thing
@@ -227,7 +254,7 @@ runMainLoop()
 # notes
 # -------------------------------------------------------
 """
-cxfreeze --base-name=Win32GUI Countdown-timer.pyw
+
 """
 
 
